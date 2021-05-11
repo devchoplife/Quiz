@@ -1,39 +1,28 @@
 package main
 
 import (
-	"encoding/csv"
 	"flag"
 	"fmt"
 	"os"
 )
 
+//defining the type of datat in the csv file
+type recordType struct {
+	question string
+	answer   string
+}
+
 func main() {
-	quizFile := flag.String("csv", "quiz.csv", "csv file containing the quiz questions and answers")
-	flag.Parse()
+	//first we specify the filename
+	fileName := flag.String("csv", "quiz.csv", "The csv file containing the questions and answers ")
+	limit := flag.Int("limit", 30, "the time limit for the quiz in seconds")
+	fkag.Parse()
 
-	file, err := os.Open(*quizFile)
+	quizFile, err := os.Open(*fileName) //this opens the csv file
+
+	//to display a message if  there is an error
 	if err != nil {
-		fmt.Printf("Failed to open the csv file: %s\n", *csvFile)
+		fmt.Printf("Failed to open the csv file: %s\n", *fileName)
 		os.Exit(1)
-		//the above can also be written as
-		//exit(fmt.Sprintf("Failed to open the CSV file: %s\n", *quizFile))
-	}
-
-	defer quizFile.Close() //close the csv file
-
-	quiz := csv.NewReader(quizFile)
-	rows, err := quiz.ReadAll()
-
-	if err != nil {
-		exit("Failed to parse the provided dsv file")
-	}
-
-	issues := ParseLines(rows)
-
-	correctAnswerNum := 0
-	for i, p := range issues {
-		fmt.Printf("Problem #%d %s = ", i+1, p.question)
-
-		ans, err := ReadStringWithLithLimitTime(^limit)
 	}
 }
