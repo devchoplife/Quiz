@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/csv"
-	"errors"
 	"flag"
 	"fmt"
 	"os"
@@ -18,7 +17,7 @@ type fileType struct {
 
 func exit(msg string) {
 	fmt.Println(msg)
-	os.Exit(1)
+	os.Exit(1) //return error
 }
 
 //THis function returns the struct fileType
@@ -33,37 +32,24 @@ func ParseRows(rows [][]string) []fileType {
 	return ini
 }
 
-func ReadStringInputWithTime(limit int) (string, error) {
-	timer := time.NewTimer(time.Duration(limit) * time.Second).C
-	done := make(chan bool)
-	answer, err := "", error(nil)
-	go func() {
-		fmt.Scanf("%s\n", &answer)
-		done <- true
-	}()
-	for {
-		select {
-		case <-timer:
-			return "", errors.New("Timer expired")
-		case <-done:
-			return answer, err
-		}
-	}
-}
-
 func main() {
 	//first we specify the filename
 	fileName := flag.String("csv", "quiz.csv", "The csv file containing the questions and answers ")
 	//then we specify the time limit for the quiz
 	limit := flag.Int("limit", 30, "the time limit for the quiz in seconds")
-	flag.Parse()
+	flag.Parse() /*Parse parses the command-line flags from os.Args[1:].
+	Must be called after all flags are defined and before
+	flags are accessed by the program.*/
 
 	quizFile, err := os.Open(*fileName) //this opens the csv file
 
 	//to display a message if  there is an error
 	if err != nil {
 		fmt.Printf("Failed to open the csv file: %s\n", *fileName)
-		os.Exit(1)
+		os.Exit(1) /*Exit causes the current program to exit with the given
+		status code. Conventionally, code zero indicates success, non-zero an
+		error. The program terminates immediately; deferred functions
+		are not run.*/
 	}
 
 	defer quizFile.Close() //close the csv file
@@ -79,17 +65,31 @@ func main() {
 	quiz := ParseRows(rows)
 
 	correctAnsCount := 0
+
+quizLoop:
 	for i, p := range quiz {
 		fmt.Printf("Quiz No. %d: %s =", i+1, p.question)
 
-		answer, err := ReadStringInputWithTime(*limit)
-		if err != nil {
-			println("Time Expired!")
-			break
-		}
-		if strings.ToLower(strings.Trim(answer, "\n ")) == p.answer {
-			correctAnsCount++
+		timer := time.NewTimer(time.Duration(*limit) * time.Second) //sends the timer to the Channel
+		var answer string
+		answerCh := make(chan string)
+
+		//go routine
+		go func() {
+			fmt.Scanf("%s\n", &answer)
+			answerCh <- answer //this is the answer channel
+		}()
+
+		select {
+		case <-timer.C:
+			fmt.Println("Time Expired!!!")
+			break quizLoop //breaks the Loop
+
+		case answer := <-answerCh:
+			if answer == p.answer {
+				correctAnsCount++
+			}
 		}
 	}
-	println("You scored ", correctAnsCount, "out of ", len(quiz))
+	fmt.Println("You scored ", correctAnsCount, "out of ", len(quiz))
 }
